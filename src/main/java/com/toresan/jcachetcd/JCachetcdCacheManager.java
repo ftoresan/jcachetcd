@@ -52,7 +52,7 @@ public class JCachetcdCacheManager implements CacheManager {
 
     @Override
     public <K, V> Cache<K, V> getCache(String cacheName) {
-        return new JCachetcdCache<>();
+        return new JCachetcdCache<>(kvClient);
     }
 
     @Override

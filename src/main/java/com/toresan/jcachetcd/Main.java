@@ -5,6 +5,8 @@ import io.etcd.jetcd.Client;
 import io.etcd.jetcd.KV;
 import io.etcd.jetcd.kv.GetResponse;
 
+import javax.cache.Cache;
+import javax.cache.CacheManager;
 import javax.cache.Caching;
 import javax.cache.spi.CachingProvider;
 import java.nio.charset.Charset;
@@ -35,5 +37,14 @@ public class Main {
 
         CachingProvider cachingProvider = Caching.getCachingProvider();
 
+        CacheManager cacheManager = cachingProvider.getCacheManager();
+
+        Cache<String, Integer> cache = cacheManager.getCache("Test");
+
+        cache.put("test_key", 1000);
+
+        System.out.println(cache.get("test_key"));
+
+        cacheManager.close();
     }
 }
