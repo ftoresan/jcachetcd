@@ -10,7 +10,7 @@
 
     <properties>
         <cache-api.version>1.1.0</cache-api.version>
-        <jetcd.version>0.3.0</jetcd.version>
+        <etcd-java.version>0.0.9</etcd-java.version>
     </properties>
 
     <dependencies>
@@ -20,9 +20,9 @@
             <version>${cache-api.version}</version>
         </dependency>
         <dependency>
-            <groupId>io.etcd</groupId>
-            <artifactId>jetcd-core</artifactId>
-            <version>${jetcd.version}</version>
+            <groupId>com.ibm.etcd</groupId>
+            <artifactId>etcd-java</artifactId>
+            <version>${etcd-java.version}</version>
         </dependency>
     </dependencies>
 

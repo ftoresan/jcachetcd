@@ -1,10 +1,14 @@
 package com.toresan.jcachetcd;
 
-import io.etcd.jetcd.ByteSequence;
-import io.etcd.jetcd.KV;
-import io.etcd.jetcd.kv.GetResponse;
+import com.google.protobuf.ByteString;
+import com.ibm.etcd.api.PutRequest;
+import com.ibm.etcd.api.RangeRequest;
+import com.ibm.etcd.api.RangeResponse;
+import com.ibm.etcd.api.TxnResponse;
+import com.ibm.etcd.client.kv.KvClient;
 
 import javax.cache.Cache;
+import javax.cache.CacheException;
 import javax.cache.CacheManager;
 import javax.cache.configuration.CacheEntryListenerConfiguration;
 import javax.cache.configuration.Configuration;
@@ -13,34 +17,27 @@ import javax.cache.processor.EntryProcessor;
 import javax.cache.processor.EntryProcessorException;
 import javax.cache.processor.EntryProcessorResult;
 import java.io.*;
-import java.nio.charset.Charset;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
 
 public class JCachetcdCache<K, V> implements Cache<K, V> {
 
-    private KV kv;
+    private KvClient kv;
 
-    JCachetcdCache(KV kv) {
+    JCachetcdCache(KvClient kv) {
         this.kv = kv;
     }
 
     @Override
     public V get(K key) {
-        ByteSequence byteKey = ByteSequence.from(toByteArray(key));
-        CompletableFuture<GetResponse> getFuture = kv.get(byteKey);
+        RangeResponse response = kv.get(ByteString.copyFrom(toByteArray(key))).sync();
 
-        // get the value from CompletableFuture
         try {
-            GetResponse response = getFuture.get();
-            return (V) toObject(response.getKvs().get(0).getValue().getBytes());
-        } catch (InterruptedException | ExecutionException e) {
-            e.printStackTrace();
+            return (V) toObject(response.getKvs(0).getValue().toByteArray());
+        } catch (Throwable t) {
+            throw new CacheException(t);
         }
-        return null;
     }
 
     @Override
@@ -60,15 +57,25 @@ public class JCachetcdCache<K, V> implements Cache<K, V> {
 
     @Override
     public void put(K key, V value) {
-        ByteSequence byteKey = ByteSequence.from(toByteArray(key));
-        ByteSequence byteValue = ByteSequence.from(toByteArray(value));
-
-        kv.put(byteKey, byteValue).thenAccept(r -> System.out.println(r));
+        try {
+            kv.put(ByteString.copyFrom(toByteArray(key)), ByteString.copyFrom(toByteArray(value))).sync();
+        } catch (Throwable t) {
+            throw new CacheException(t);
+        }
     }
 
     @Override
     public V getAndPut(K key, V value) {
-        return null;
+        ByteString protoKey = ByteString.copyFrom(toByteArray(key));
+        RangeRequest getRequest = kv.get(protoKey).asRequest();
+        PutRequest putRequest = kv.put(protoKey, ByteString.copyFrom(toByteArray(value))).asRequest();
+        try {
+            TxnResponse response = kv.batch().get(getRequest).put(putRequest).sync();
+            return (V) toObject(response.getResponses(0).getResponseRange().getKvs(0).getValue().toByteArray());
+        } catch (Throwable t) {
+            throw new CacheException(t);
+        }
+
     }
 
     @Override

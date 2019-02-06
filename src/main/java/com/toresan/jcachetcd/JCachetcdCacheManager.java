@@ -1,7 +1,7 @@
 package com.toresan.jcachetcd;
 
-import io.etcd.jetcd.Client;
-import io.etcd.jetcd.KV;
+import com.ibm.etcd.client.EtcdClient;
+import com.ibm.etcd.client.kv.KvClient;
 
 import javax.cache.Cache;
 import javax.cache.CacheManager;
@@ -12,12 +12,12 @@ import java.util.Properties;
 
 public class JCachetcdCacheManager implements CacheManager {
 
-    private final KV kvClient;
-    private Client client;
+    private final KvClient kvClient;
+    private EtcdClient client;
 
-    public JCachetcdCacheManager(Client client) {
+    public JCachetcdCacheManager(EtcdClient client) {
         this.client = client;
-        kvClient = client.getKVClient();
+        kvClient = client.getKvClient();
     }
 
     @Override

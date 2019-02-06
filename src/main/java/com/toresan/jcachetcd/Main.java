@@ -38,13 +38,21 @@ public class Main {
         CachingProvider cachingProvider = Caching.getCachingProvider();
 
         CacheManager cacheManager = cachingProvider.getCacheManager();
+        try {
 
-        Cache<String, Integer> cache = cacheManager.getCache("Test");
+            Cache<String, Integer> cache = cacheManager.getCache("Test");
 
-        cache.put("test_key", 1000);
+            cache.put("test_key", 1000);
 
-        System.out.println(cache.get("test_key"));
+            System.out.println(cache.get("test_key"));
 
-        cacheManager.close();
+            Integer oldValue = cache.getAndPut("test_key", 2000);
+
+            System.out.println("Old : " + oldValue);
+
+            System.out.println("Current: " + cache.get("test_key"));
+        } finally {
+            cacheManager.close();
+        }
     }
 }

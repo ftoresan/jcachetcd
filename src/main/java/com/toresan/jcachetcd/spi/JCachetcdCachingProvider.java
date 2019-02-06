@@ -1,7 +1,7 @@
 package com.toresan.jcachetcd.spi;
 
+import com.ibm.etcd.client.EtcdClient;
 import com.toresan.jcachetcd.JCachetcdCacheManager;
-import io.etcd.jetcd.Client;
 
 import javax.cache.CacheManager;
 import javax.cache.configuration.OptionalFeature;
@@ -71,8 +71,7 @@ public class JCachetcdCachingProvider implements CachingProvider {
     }
 
     private JCachetcdCacheManager createCacheManager() {
-        Client client = Client.builder().endpoints("http://localhost:2379").build();
-
+        EtcdClient client = EtcdClient.forEndpoint("localhost", 2379).withPlainText().build();
         return new JCachetcdCacheManager(client);
     }
 }
