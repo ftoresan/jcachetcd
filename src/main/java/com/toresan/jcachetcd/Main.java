@@ -1,21 +1,14 @@
 package com.toresan.jcachetcd;
 
-import io.etcd.jetcd.ByteSequence;
-import io.etcd.jetcd.Client;
-import io.etcd.jetcd.KV;
-import io.etcd.jetcd.kv.GetResponse;
-
 import javax.cache.Cache;
 import javax.cache.CacheManager;
 import javax.cache.Caching;
 import javax.cache.spi.CachingProvider;
-import java.nio.charset.Charset;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
 public class Main {
     public static void main(String[] args) throws ExecutionException, InterruptedException {
-        try (Client client = Client.builder().endpoints("http://localhost:2379").build()) {
+        /*try (Client client = Client.builder().endpoints("http://localhost:2379").build()) {
             KV kvClient = client.getKVClient();
 
             ByteSequence key = ByteSequence.from("test_key", Charset.forName("utf-8"));
@@ -33,7 +26,7 @@ public class Main {
 
             // delete the key
             kvClient.delete(key).get();
-        }
+        }*/
 
         CachingProvider cachingProvider = Caching.getCachingProvider();
 
@@ -47,6 +40,9 @@ public class Main {
             System.out.println(cache.get("test_key"));
 
             Integer oldValue = cache.getAndPut("test_key", 2000);
+
+            System.out.println("Contains test_key: " + cache.containsKey("test_key"));
+            System.out.println("Contains invalid_key: " + cache.containsKey("invalid_key"));
 
             System.out.println("Old : " + oldValue);
 

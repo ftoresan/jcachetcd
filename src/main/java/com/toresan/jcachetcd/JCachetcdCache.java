@@ -47,7 +47,7 @@ public class JCachetcdCache<K, V> implements Cache<K, V> {
 
     @Override
     public boolean containsKey(K key) {
-        return false;
+        return kv.get(ByteString.copyFrom(toByteArray(key))).sync().getCount() > 0;
     }
 
     @Override
