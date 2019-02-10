@@ -4,6 +4,7 @@ import javax.cache.Cache;
 import javax.cache.CacheManager;
 import javax.cache.Caching;
 import javax.cache.spi.CachingProvider;
+import java.util.Set;
 import java.util.concurrent.ExecutionException;
 
 public class Main {
@@ -45,6 +46,12 @@ public class Main {
             System.out.println("Contains invalid_key: " + cache.containsKey("invalid_key"));
 
             System.out.println("Old : " + oldValue);
+
+            System.out.println("Remove new: " + cache.remove("new"));
+            System.out.println(cache.putIfAbsent("new", 10));
+            System.out.println(cache.putIfAbsent("new", 20));
+
+            cache.getAll(Set.of("test_key", "new")).forEach((k, v) -> System.out.println("Key : " + k + " Value: " + v));
 
             System.out.println("Current: " + cache.get("test_key"));
         } finally {

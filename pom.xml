@@ -11,6 +11,8 @@
     <properties>
         <cache-api.version>1.1.0</cache-api.version>
         <etcd-java.version>0.0.9</etcd-java.version>
+        <junit.version>4.12</junit.version>
+        <mockito-core.version>2.24.0</mockito-core.version>
     </properties>
 
     <dependencies>
@@ -24,6 +26,19 @@
             <artifactId>etcd-java</artifactId>
             <version>${etcd-java.version}</version>
         </dependency>
+        <!-- Tests -->
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <version>${junit.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-core</artifactId>
+            <version>${mockito-core.version}</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <build>
@@ -34,6 +49,8 @@
                 <version>3.6.1</version>
                 <configuration>
                     <release>1.8</release>
+                    <source>9</source>
+                    <target>9</target>
                 </configuration>
             </plugin>
         </plugins>

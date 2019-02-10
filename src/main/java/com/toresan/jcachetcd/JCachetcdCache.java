@@ -1,11 +1,9 @@
 package com.toresan.jcachetcd;
 
 import com.google.protobuf.ByteString;
-import com.ibm.etcd.api.PutRequest;
-import com.ibm.etcd.api.RangeRequest;
-import com.ibm.etcd.api.RangeResponse;
-import com.ibm.etcd.api.TxnResponse;
+import com.ibm.etcd.api.*;
 import com.ibm.etcd.client.kv.KvClient;
+import com.toresan.jcachetcd.util.TransportConverter;
 
 import javax.cache.Cache;
 import javax.cache.CacheException;
@@ -16,10 +14,14 @@ import javax.cache.integration.CompletionListener;
 import javax.cache.processor.EntryProcessor;
 import javax.cache.processor.EntryProcessorException;
 import javax.cache.processor.EntryProcessorResult;
-import java.io.*;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
+
+import static com.google.common.base.Preconditions.checkNotNull;
+import static com.toresan.jcachetcd.util.TransportConverter.toByteString;
+import static com.toresan.jcachetcd.util.TransportConverter.toObject;
 
 public class JCachetcdCache<K, V> implements Cache<K, V> {
 
@@ -31,10 +33,11 @@ public class JCachetcdCache<K, V> implements Cache<K, V> {
 
     @Override
     public V get(K key) {
-        RangeResponse response = kv.get(ByteString.copyFrom(toByteArray(key))).sync();
+        checkNotNull(key);
+        RangeResponse response = kv.get(toByteString(key)).sync();
 
         try {
-            return (V) toObject(response.getKvs(0).getValue().toByteArray());
+            return toObject(response.getKvs(0).getValue());
         } catch (Throwable t) {
             throw new CacheException(t);
         }
@@ -42,12 +45,18 @@ public class JCachetcdCache<K, V> implements Cache<K, V> {
 
     @Override
     public Map<K, V> getAll(Set<? extends K> keys) {
-        return null;
+        checkNotNull(keys);
+        KvClient.FluentTxnOps<?> batch = kv.batch();
+        keys.stream().map(TransportConverter::toByteString).forEach(k -> batch.get(kv.get(k).asRequest()));
+        TxnResponse response = batch.sync();
+        Map<Object, Object> map = response.getResponsesList().stream().map(r -> r.getResponseRange().getKvs(0))
+                .collect(Collectors.toMap(k -> toObject(k.getKey()), k -> toObject(k.getValue())));
+        return (Map<K, V>) map;
     }
 
     @Override
     public boolean containsKey(K key) {
-        return kv.get(ByteString.copyFrom(toByteArray(key))).sync().getCount() > 0;
+        return kv.get(toByteString(key)).sync().getCount() > 0;
     }
 
     @Override
@@ -57,8 +66,9 @@ public class JCachetcdCache<K, V> implements Cache<K, V> {
 
     @Override
     public void put(K key, V value) {
+        checkNotNull(key);
         try {
-            kv.put(ByteString.copyFrom(toByteArray(key)), ByteString.copyFrom(toByteArray(value))).sync();
+            kv.put(toByteString(key), toByteString(value)).sync();
         } catch (Throwable t) {
             throw new CacheException(t);
         }
@@ -66,12 +76,12 @@ public class JCachetcdCache<K, V> implements Cache<K, V> {
 
     @Override
     public V getAndPut(K key, V value) {
-        ByteString protoKey = ByteString.copyFrom(toByteArray(key));
+        ByteString protoKey = toByteString(key);
         RangeRequest getRequest = kv.get(protoKey).asRequest();
-        PutRequest putRequest = kv.put(protoKey, ByteString.copyFrom(toByteArray(value))).asRequest();
+        PutRequest putRequest = kv.put(protoKey, toByteString(value)).asRequest();
         try {
             TxnResponse response = kv.batch().get(getRequest).put(putRequest).sync();
-            return (V) toObject(response.getResponses(0).getResponseRange().getKvs(0).getValue().toByteArray());
+            return toObject(response.getResponses(0).getResponseRange().getKvs(0).getValue());
         } catch (Throwable t) {
             throw new CacheException(t);
         }
@@ -85,12 +95,18 @@ public class JCachetcdCache<K, V> implements Cache<K, V> {
 
     @Override
     public boolean putIfAbsent(K key, V value) {
-        return false;
+        checkNotNull(key);
+        ByteString protoKey = toByteString(key);
+        TxnResponse txnResponse = kv.txnIf().notExists(protoKey).then().put(kv.put(protoKey, toByteString(value)).asRequest()).sync();
+
+        return txnResponse.getResponsesCount() > 0;
     }
 
     @Override
     public boolean remove(K key) {
-        return false;
+        checkNotNull(key);
+        DeleteRangeResponse response = kv.delete(toByteString(key)).sync();
+        return response.getDeleted() > 0;
     }
 
     @Override
@@ -186,28 +202,5 @@ public class JCachetcdCache<K, V> implements Cache<K, V> {
     @Override
     public Iterator<Entry<K, V>> iterator() {
         return null;
-    }
-
-    private byte[] toByteArray(Object obj) {
-        try (ByteArrayOutputStream bos = new ByteArrayOutputStream()) {
-            ObjectOutput out = new ObjectOutputStream(bos);
-            out.writeObject(obj);
-            out.flush();
-            return bos.toByteArray();
-        } catch (IOException e) {
-            e.printStackTrace();
-            return null;
-        }
-    }
-
-    private Object toObject(byte[] bytes) {
-        ObjectInput in = null;
-        try (ByteArrayInputStream bis = new ByteArrayInputStream(bytes)) {
-            in = new ObjectInputStream(bis);
-            return in.readObject();
-        } catch (IOException | ClassNotFoundException e) {
-            e.printStackTrace();
-            return null;
-        }
     }
 }
