@@ -37,6 +37,9 @@ public class JCachetcdCache<K, V> implements Cache<K, V> {
         RangeResponse response = kv.get(toByteString(key)).sync();
 
         try {
+            if (response.getKvsCount() == 0) {
+                return null;
+            }
             return toObject(response.getKvs(0).getValue());
         } catch (Throwable t) {
             throw new CacheException(t);
@@ -111,7 +114,11 @@ public class JCachetcdCache<K, V> implements Cache<K, V> {
 
     @Override
     public boolean remove(K key, V oldValue) {
-        return false;
+        ByteString protoKey = toByteString(key);
+        ByteString protoValue = toByteString(oldValue);
+        TxnResponse txnResponse = kv.txnIf().cmpEqual(protoKey).value(protoValue).then().delete(kv.delete(protoKey).asRequest()).sync();
+
+        return txnResponse.getResponsesCount() > 0;
     }
 
     @Override

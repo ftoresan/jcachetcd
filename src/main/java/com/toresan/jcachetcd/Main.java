@@ -9,25 +9,6 @@ import java.util.concurrent.ExecutionException;
 
 public class Main {
     public static void main(String[] args) throws ExecutionException, InterruptedException {
-        /*try (Client client = Client.builder().endpoints("http://localhost:2379").build()) {
-            KV kvClient = client.getKVClient();
-
-            ByteSequence key = ByteSequence.from("test_key", Charset.forName("utf-8"));
-            ByteSequence value = ByteSequence.from("test_value", Charset.forName("utf-8"));
-
-            // put the key-value
-            kvClient.put(key, value).get();
-
-            // get the CompletableFuture
-            CompletableFuture<GetResponse> getFuture = kvClient.get(key);
-
-            // get the value from CompletableFuture
-            GetResponse response = getFuture.get();
-            response.getKvs().stream().map(k -> k.getValue().toString(Charset.forName("utf-8"))).forEach(System.out::println);
-
-            // delete the key
-            kvClient.delete(key).get();
-        }*/
 
         CachingProvider cachingProvider = Caching.getCachingProvider();
 
@@ -52,6 +33,14 @@ public class Main {
             System.out.println(cache.putIfAbsent("new", 20));
 
             cache.getAll(Set.of("test_key", "new")).forEach((k, v) -> System.out.println("Key : " + k + " Value: " + v));
+
+            System.out.println("Current: " + cache.get("test_key"));
+
+            System.out.println("Remove if 1000: " + cache.remove("test_key", 1000));
+
+            System.out.println("Current: " + cache.get("test_key"));
+
+            System.out.println("Remove if 2000: " + cache.remove("test_key", 2000));
 
             System.out.println("Current: " + cache.get("test_key"));
         } finally {
