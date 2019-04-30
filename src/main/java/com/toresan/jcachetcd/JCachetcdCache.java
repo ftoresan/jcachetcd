@@ -123,7 +123,12 @@ public class JCachetcdCache<K, V> implements Cache<K, V> {
 
     @Override
     public V getAndRemove(K key) {
-        return null;
+        checkNotNull(key);
+        ByteString protoKey = toByteString(key);
+        RangeRequest getRequest = kv.get(protoKey).asRequest();
+        DeleteRangeRequest deleteRequest = kv.delete(protoKey).asRequest();
+        TxnResponse txnResponse = kv.batch().get(getRequest).delete(deleteRequest).sync();
+        return toObject(txnResponse.getResponses(0).getResponseRange().getKvs(0).getValue());
     }
 
     @Override
@@ -183,7 +188,6 @@ public class JCachetcdCache<K, V> implements Cache<K, V> {
 
     @Override
     public void close() {
-
     }
 
     @Override

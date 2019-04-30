@@ -43,6 +43,12 @@ public class Main {
             System.out.println("Remove if 2000: " + cache.remove("test_key", 2000));
 
             System.out.println("Current: " + cache.get("test_key"));
+
+            cache.put("other_key", 42);
+
+            System.out.println("Get and remove: " + cache.getAndRemove("other_key"));
+
+            System.out.println("Other now: " + cache.get("other_key"));
         } finally {
             cacheManager.close();
         }
